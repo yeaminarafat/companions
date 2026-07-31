@@ -1,10 +1,11 @@
 /* Companions of the Prophet ﷺ — service worker
    Cache-first over a full precache: once installed the app never needs the network. */
-const VERSION = 'companions-bf367f2386';
+const VERSION = 'companions-9c83cb51e1';
 const ASSETS = [
   "./",
   "index.html",
   "app.js",
+  "quiz.js",
   "data.js",
   "manifest.webmanifest",
   "fonts.css",
@@ -66,7 +67,7 @@ self.addEventListener('fetch', e => {
           caches.open(VERSION).then(c => c.put(req, copy));
         }
         return res;
-      }).catch(() => caches.match('index.html'));
+      }).catch(() => req.mode === 'navigate' ? caches.match('index.html') : Response.error());
     })
   );
 });

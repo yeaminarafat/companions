@@ -301,8 +301,10 @@ function switchTab(t){
   document.getElementById('dirControls').style.display = t==='dir'?'block':'none';
   document.getElementById('tl').style.display = t==='tl'?'block':'none';
   document.getElementById('study').style.display = t==='study'?'block':'none';
+  document.getElementById('quiz').style.display = t==='quiz'?'block':'none';
   document.getElementById('nores').style.display='none';
   if(t==='study') renderStudy();
+  if(t==='quiz') renderQuizHome();
   if(t==='dir') applyFilter();
   window.scrollTo({top:0});
 }
@@ -384,6 +386,6 @@ if('serviceWorker' in navigator){
 renderDir();
 renderTL();
 const qsTab = new URLSearchParams(location.search).get('tab');   /* home-screen shortcuts */
-const openTab = ['dir','tl','study'].includes(qsTab) ? qsTab
-              : (['dir','tl','study'].includes(S.tab) ? S.tab : 'dir');
+const TABS = ['dir','tl','study','quiz'];
+const openTab = TABS.includes(qsTab) ? qsTab : (TABS.includes(S.tab) ? S.tab : 'dir');
 switchTab(openTab);

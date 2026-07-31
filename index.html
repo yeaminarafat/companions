@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Companions of the Prophet ﷺ</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#14102f">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Every companion of the Prophet ﷺ from the sirah, with a 100-event Prophetic timeline — offline, on your home screen.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Companions">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root{
+  --green:#14102f; --green2:#4b2c74; --green3:#6d4499;
+  --gold:#a05fc6; --gold-soft:#e4c6f2; --parchment:#f8f5fc; --card:#ffffff;
+  --ink:#221b32; --ink-soft:#6a5f78; --line:#e7dff0; --red:#a03e63;
+  --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--parchment);color:var(--ink);font-family:'Crimson Pro','Amiri',Georgia,serif;font-size:17px;line-height:1.55;-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+.arabic{font-family:'Amiri',serif}
+/* ---------- header ---------- */
+header{background:linear-gradient(160deg,#080b26 0%,#2a1a52 55%,#233a86 100%);color:#f6eefb;padding:calc(42px + var(--safe-top)) 20px 0;position:relative;overflow:hidden}
+header .pattern{position:absolute;inset:0;opacity:.07;background-image:radial-gradient(circle at 25% 30%, #fff 1.5px, transparent 1.6px),radial-gradient(circle at 75% 70%, #fff 1.5px, transparent 1.6px);background-size:46px 46px}
+.hwrap{max-width:1060px;margin:0 auto;position:relative;text-align:center}
+.bismillah{font-family:'Amiri',serif;font-size:26px;color:var(--gold-soft);margin-bottom:14px}
+h1{font-family:'Amiri',serif;font-weight:700;font-size:clamp(26px,4.4vw,44px);letter-spacing:.5px}
+h1 .saw{color:var(--gold-soft)}
+.subtitle{font-size:18px;color:#d7c2e6;margin:10px auto 4px;max-width:720px;font-style:italic}
+.source{font-size:14px;color:#a893bc;margin-bottom:22px}
+.stats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.stat{background:rgba(255,255,255,.08);border:1px solid rgba(228,198,242,.34);border-radius:10px;padding:8px 18px;font-family:Inter,'Amiri',sans-serif;font-size:13px}
+.stat b{display:block;font-size:21px;color:var(--gold-soft);font-family:'Crimson Pro','Amiri',serif}
+/* progress */
+.pwrap{max-width:420px;margin:0 auto 22px}
+.pbar{height:7px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-soft));border-radius:99px;transition:width .35s}
+.plabel{font-family:Inter,'Amiri',sans-serif;font-size:11.5px;color:#b49dc6;margin-top:7px;letter-spacing:.3px}
+/* tabs */
+.tabs{display:flex;justify-content:center;gap:6px;position:relative}
+.tab{font-family:Inter,'Amiri',sans-serif;font-size:15px;font-weight:600;padding:12px 22px;border-radius:12px 12px 0 0;background:rgba(255,255,255,.09);color:#ddc9ec;cursor:pointer;border:none}
+.tab.active{background:var(--parchment);color:var(--green)}
+/* ---------- controls ---------- */
+.controls{position:sticky;top:0;z-index:40;background:var(--parchment);border-bottom:1px solid var(--line);padding:14px 20px}
+.cwrap{max-width:1060px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#search{flex:1;min-width:230px;padding:10px 16px;font-size:16px;font-family:'Crimson Pro','Amiri',serif;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+#search:focus{outline:none;border-color:var(--green3)}
+.chip{font-family:Inter,'Amiri',sans-serif;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+.chip.active{background:var(--green);border-color:var(--green);color:#fff}
+.chip.gold.active{background:var(--gold);border-color:var(--gold);color:#160c2b}
+.chip.star.active{background:#7c3f9e;border-color:#7c3f9e;color:#fff}
+/* ---------- main ---------- */
+main{max-width:1060px;margin:0 auto;padding:28px 20px calc(90px + var(--safe-bot))}
+.groupnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px}
+.gn{font-family:Inter,'Amiri',sans-serif;font-size:12px;font-weight:600;color:var(--green2);background:#f3ecfb;border:1px solid #e3d3f2;border-radius:8px;padding:6px 11px;text-decoration:none}
+.gn:hover{background:var(--green);color:#fff}
+section.group{margin-bottom:46px}
+.ghead{border-bottom:2.5px solid var(--gold);padding-bottom:10px;margin-bottom:6px}
+.ghead h2{font-family:'Amiri',serif;font-size:29px;color:var(--green);font-weight:700}
+.ghead .gsub{color:var(--ink-soft);font-style:italic;font-size:16px}
+.gcount{font-family:Inter,'Amiri',sans-serif;font-size:12px;color:var(--ink-soft);margin:8px 0 16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px 34px;cursor:pointer;transition:box-shadow .15s,border-color .15s;position:relative}
+.card:hover{border-color:var(--gold);box-shadow:0 3px 14px rgba(70,30,100,.10)}
+.card.major{border-left:4px solid var(--gold)}
+.card.ctx{border-left:4px solid #b6a6c2;background:#f6f1fa}
+.card.open{grid-column:1/-1}
+.card.is-known{background:#f8f2fd}
+.card.is-known .nm:after{content:' ✓';color:var(--green3);font-size:15px}
+.card.is-star{box-shadow:inset 0 0 0 1.5px var(--gold-soft)}
+.nrow{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.nm{font-family:'Amiri',serif;font-size:21px;font-weight:700;color:var(--green)}
+.ra{font-family:'Amiri',serif;font-size:14px;color:var(--gold);white-space:nowrap}
+.dyr{direction:ltr;unicode-bidi:isolate;font-family:Inter,'Amiri',sans-serif;font-size:10.5px;font-weight:600;color:var(--ink-soft);background:#f1e9f9;border:1px solid var(--line);padding:2px 7px;border-radius:6px;white-space:nowrap;vertical-align:3px;margin-left:4px}
+.ar{font-family:'Amiri',serif;font-size:19px;color:var(--ink-soft);direction:rtl}
+.who{font-size:15.5px;color:var(--ink);margin-top:6px}
+.kunya{font-family:Inter,'Amiri',sans-serif;font-size:11.5px;color:var(--ink-soft);margin-top:3px;letter-spacing:.2px}
+.badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.bdg{font-family:Inter,'Amiri',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:#f3ecfb;color:var(--green2);border:1px solid #e4d2f2}
+.bdg.b-martyr{background:#fae7ee;color:var(--red);border-color:#f2cbdb}
+.bdg.b-ten{background:#f4e8fb;color:#7c3f9e;border-color:#e0c6f0}
+.detail{display:none;margin-top:14px;border-top:1px dashed var(--line);padding-top:14px}
+.card.open .detail{display:block}
+.story{font-size:16.5px;line-height:1.65;white-space:pre-line}
+.moments{margin:13px 0 0}
+.moments h4, .dth h4{font-family:Inter,'Amiri',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.moments li{margin-left:20px;font-size:15.5px;color:var(--ink);margin-bottom:3px}
+.dth{margin-top:12px;font-size:15.5px;color:var(--ink-soft);font-style:italic}
+.after{margin-top:13px;border-left:3px solid #c8b4dc;background:#f7f2fb;border-radius:0 10px 10px 0;padding:10px 14px}
+.after h4{font-family:Inter,'Amiri',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6e5590;margin-bottom:5px}
+.after p{font-size:15.5px}
+.srcline{font-family:Inter,'Amiri',sans-serif;font-size:11px;color:var(--ink-soft);margin-top:9px}
+.srcline b{color:#6e5590}
+.minor-note{font-family:Inter,'Amiri',sans-serif;font-size:12px;font-weight:600;color:var(--ink-soft);margin:20px 0 10px;letter-spacing:.6px;text-transform:uppercase}
+.noresults{padding:40px;text-align:center;color:var(--ink-soft);font-style:italic;display:none}
+/* card action bar */
+.acts{position:absolute;left:18px;right:18px;bottom:8px;display:flex;gap:6px;align-items:center}
+.act{font-family:Inter,'Amiri',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;line-height:1.5}
+.act:hover{border-color:var(--gold)}
+.act.on[data-a="star"]{background:#f4e8fb;color:#7c3f9e;border-color:#e0c6f0}
+.act.on[data-a="known"]{background:#f4ecfb;color:var(--green2);border-color:#e2d0f1}
+.act.on[data-a="review"]{background:#fae7ee;color:var(--red);border-color:#f2cbdb}
+.expand-hint{margin-left:auto;font-family:Inter,'Amiri',sans-serif;font-size:10px;color:#bcaacd}
+/* ---------- timeline ---------- */
+#tl,#study{display:none}
+.eranav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:30px}
+.era{margin-bottom:44px}
+.era>h2{font-family:'Amiri',serif;font-size:27px;color:var(--green);border-bottom:2.5px solid var(--gold);padding-bottom:8px;margin-bottom:22px}
+.ev{display:flex;gap:18px;position:relative;padding-bottom:22px}
+.ev:before{content:'';position:absolute;left:87px;top:26px;bottom:-4px;width:2px;background:var(--line)}
+.ev:last-child:before{display:none}
+.when{width:76px;flex-shrink:0;text-align:right;padding-top:2px}
+.when .ce{font-family:Inter,'Amiri',sans-serif;font-weight:700;font-size:13.5px;color:var(--green)}
+.when .ah{font-family:Inter,'Amiri',sans-serif;font-size:11px;color:var(--gold);font-weight:600}
+.dot{width:13px;height:13px;border-radius:50%;background:var(--gold);border:2.5px solid var(--parchment);outline:2px solid var(--gold);flex-shrink:0;margin-top:5px;z-index:1}
+.ev.battle .dot{background:var(--red);outline-color:var(--red)}
+.evbody{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 17px}
+.evbody h3{font-family:'Amiri',serif;font-size:19.5px;color:var(--ink);font-weight:700}
+.evbody .ch{font-family:Inter,'Amiri',sans-serif;font-size:10.5px;font-weight:700;color:var(--green2);background:#f3ecfb;padding:2px 7px;border-radius:5px;margin-left:6px;vertical-align:2px}
+.evbody p{font-size:15.5px;margin-top:5px;color:var(--ink)}
+.ppl{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.pp{font-family:Inter,'Amiri',sans-serif;font-size:11.5px;font-weight:600;color:var(--green2);background:#f5eefb;border:1px solid #e5d4f3;padding:3px 9px;border-radius:999px;cursor:pointer}
+.pp.linked:hover{background:var(--green);color:#fff}
+.pp.nolink{cursor:default;opacity:.75}
+/* ---------- study tab ---------- */
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:20px}
+.panel h2{font-family:'Amiri',serif;font-size:24px;color:var(--green);margin-bottom:4px}
+.panel .lead{font-style:italic;color:var(--ink-soft);font-size:15px;margin-bottom:14px}
+.daily{border-left:4px solid var(--gold)}
+.daily .dname{font-family:'Amiri',serif;font-size:27px;color:var(--green);font-weight:700}
+.daily .dar{font-family:'Amiri',serif;font-size:22px;color:var(--ink-soft);direction:rtl;display:block;margin-top:2px}
+.daily .dwho{margin-top:8px;font-size:16.5px}
+.daily .dstory{margin-top:10px;font-size:16px;line-height:1.65;color:var(--ink);white-space:pre-line}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.tile b{display:block;font-size:26px;color:var(--green);font-family:'Crimson Pro','Amiri',serif}
+.tile span{font-family:Inter,'Amiri',sans-serif;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft)}
+.lst{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.lnk{font-family:Inter,'Amiri',sans-serif;font-size:12.5px;font-weight:600;color:var(--green2);background:#f5eefb;border:1px solid #e5d4f3;padding:5px 11px;border-radius:999px;cursor:pointer}
+.lnk:hover{background:var(--green);color:#fff}
+.empty{color:var(--ink-soft);font-style:italic;font-size:15px;margin-top:8px}
+.btn{font-family:Inter,'Amiri',sans-serif;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;margin-right:8px;margin-top:6px}
+.btn:hover{border-color:var(--gold);color:var(--ink)}
+/* ---------- install banner ---------- */
+#install{display:none;position:fixed;left:12px;right:12px;bottom:calc(12px + var(--safe-bot));z-index:80;background:var(--green);color:#eadfbe;border:1px solid var(--gold);border-radius:14px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,.25);font-family:Inter,'Amiri',sans-serif;font-size:13.5px;line-height:1.5}
+#install b{color:var(--gold-soft)}
+#install .row{display:flex;gap:10px;align-items:center;margin-top:10px}
+#install button{font-family:Inter,'Amiri',sans-serif;font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;background:var(--gold);color:#160c2b}
+#install button.ghost{background:transparent;color:#b49dc6;border:1px solid rgba(255,255,255,.25)}
+footer{background:var(--green);color:#c3aed6;text-align:center;padding:30px 20px calc(30px + var(--safe-bot));font-size:14.5px}
+footer .arabic{font-size:19px;color:var(--gold-soft)}
+@media(max-width:640px){
+  .when{width:56px}.ev:before{left:67px}
+  /* compact app header on phones — content should be reachable without scrolling */
+  header{padding:calc(16px + var(--safe-top)) 16px 0}
+  .bismillah{font-size:19px;margin-bottom:8px}
+  h1{font-size:25px}
+  .subtitle{display:none}
+  .source{font-size:11.5px;margin-bottom:14px;line-height:1.4}
+  .stats{gap:6px;margin-bottom:14px}
+  .stat{padding:5px 11px;font-size:10.5px;border-radius:8px}
+  .stat b{font-size:16px}
+  .pwrap{margin-bottom:14px}
+  .plabel{font-size:10.5px;margin-top:5px}
+  .tab{padding:10px 12px;font-size:13px}
+  main{padding:20px 14px calc(80px + var(--safe-bot))}
+  .controls{padding:11px 14px}
+  .cwrap{gap:7px}
+  .ghead h2{font-size:23px}
+  .ghead .gsub{font-size:14.5px}
+  .cards{grid-template-columns:1fr;gap:11px}
+  .card{padding:15px 16px 32px}
+  .nm{font-size:19px}
+  footer{font-size:13px;padding:24px 16px calc(24px + var(--safe-bot))}
+}
+.hl{animation:hl 2.4s ease-out}
+@keyframes hl{0%{box-shadow:0 0 0 4px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
+</style>
+</head>
+<body>
+<header>
+  <div class="pattern"></div>
+  <div class="hwrap">
+    <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+    <h1>Companions of the Prophet <span class="saw">ﷺ</span></h1>
+    <div class="subtitle">Every companion — and every step of the Prophetic timeline — from the sirah, kept together in one place</div>
+    <div class="source">Compiled from <b>“The Sirah of the Prophet”</b> by Sh. Yasir Qadhi (30 chapters) · chapter references throughout</div>
+    <div class="stats">
+      <div class="stat"><b>189</b>Companions</div>
+      <div class="stat"><b>7</b>Circles</div>
+      <div class="stat"><b>100</b>Timeline events</div>
+      <div class="stat"><b>63</b>Years, 570–632 CE</div>
+    </div>
+    <div class="pwrap">
+      <div class="pbar"><i id="pfill"></i></div>
+      <div class="plabel" id="plabel">0 of 189 marked known</div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="dir">☪ Companions</button>
+      <button class="tab" data-tab="tl">⏳ Timeline</button>
+      <button class="tab" data-tab="study">✦ Study</button>
+    </div>
+  </div>
+</header>
+
+<div class="controls" id="dirControls">
+  <div class="cwrap">
+    <input id="search" type="search" placeholder="Search a name, title, or story — e.g. ‘Badr’, ‘muʾadhdhin’, ‘Khaybar’…">
+    <button class="chip active" data-f="all">All</button>
+    <button class="chip gold" data-f="major">Major figures</button>
+    <button class="chip" data-f="Martyr">Martyrs</button>
+    <button class="chip" data-f="Badr">People of Badr</button>
+    <button class="chip" data-f="women">Women</button>
+    <button class="chip star" data-f="__star">★ Starred</button>
+    <button class="chip" data-f="__review">↺ To review</button>
+    <button class="chip" data-f="__unknown">Not yet known</button>
+  </div>
+</div>
+
+<main>
+  <div id="dir"></div>
+  <div class="noresults" id="nores">No one matches that search — try a shorter fragment (diacritics not needed).</div>
+  <div id="tl"></div>
+  <div id="study"></div>
+</main>
+
+<div id="install" role="dialog" aria-label="Install this app"></div>
+
+<footer>
+  <div class="arabic">رَضِيَ اللَّهُ عَنْهُمْ وَرَضُوا عَنْهُ</div>
+  <div style="margin-top:8px">“Allah is pleased with them and they are pleased with Him.” — At-Tawbah 9:100<br>
+  Entries follow the book’s narrative (chapter-cited). The beyond-the-book layer is cited primarily to al-Ṣallābī, <i>The Noble Life of the Prophet ﷺ</i> (continuous pagination, pp. 2–2024), supported by the classical works — al-Iṣāba, Usd al-Ghāba, al-Istīʿāb, Ibn Saʿd’s Ṭabaqāt, Siyar Aʿlām al-Nubalāʾ. Disputed dates and source variances are marked in place; where sources differ, the majority position leads.</div>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

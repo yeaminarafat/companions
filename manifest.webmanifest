@@ -1,0 +1,66 @@
+{
+  "name": "Companions of the Prophet ﷺ",
+  "short_name": "Companions",
+  "description": "Every companion of the Prophet ﷺ from the sirah — 189 biographies in 7 circles, a 100-event Prophetic timeline, and your own study marks. Works fully offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#f8f5fc",
+  "theme_color": "#14102f",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "education",
+    "books",
+    "reference"
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Companion of the day",
+      "short_name": "Today",
+      "url": "./?tab=study",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Prophetic timeline",
+      "short_name": "Timeline",
+      "url": "./?tab=tl",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

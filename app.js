@@ -45,6 +45,16 @@ function findPerson(label){
   return hit ? hit.id : null;
 }
 
+/* ---------- al-Ṣallābī passage ---------- */
+function sallabiHTML(p){
+  if(!p.sallabi || !p.sallabi.text) return '';
+  return `<details class="sal">
+    <summary>In al-Ṣallābī's words <span class="salpg">p. ${esc(String(p.sallabi.page))}</span></summary>
+    <blockquote>${esc(p.sallabi.text)}</blockquote>
+    <cite>al-Ṣallābī, <i>The Noble Life of the Prophet ﷺ</i>, p. ${esc(String(p.sallabi.page))}</cite>
+  </details>`;
+}
+
 /* ---------- render directory ---------- */
 function cardHTML(p){
   const badges = p.badges.map(b=>`<span class="${bcls(b)}">${esc(b)}</span>`).join('');
@@ -58,6 +68,7 @@ function cardHTML(p){
       ${p.book_moments&&p.book_moments.length?`<div class="moments"><h4>In the book</h4><ul>${p.book_moments.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></div>`:''}
       ${p.after_sirah?`<div class="after"><h4>After the sirah — beyond this book</h4><p>${esc(p.after_sirah)}</p></div>`:''}
       ${p.death?`<div class="dth"><h4>Departure</h4>${esc(p.death)}</div>`:''}
+      ${sallabiHTML(p)}
       ${p.beyond_sources&&p.beyond_sources.length?`<div class="srcline"><b>Beyond-the-book sources:</b> ${p.beyond_sources.map(esc).join(' · ')}</div>`:''}
     </div>
     <div class="acts">
@@ -86,7 +97,7 @@ function renderDir(){
   root.innerHTML = html;
   root.querySelectorAll('.card').forEach(c=>{
     c.addEventListener('click', e=>{
-      if(e.target.closest('.act')) return;
+      if(e.target.closest('.act') || e.target.closest('.sal')) return;
       c.classList.toggle('open');
     });
     c.querySelectorAll('.act').forEach(b=>b.addEventListener('click', e=>{
@@ -168,6 +179,7 @@ function renderStudy(){
       <div class="dstory">${esc(p.story)}</div>
       ${p.book_moments&&p.book_moments.length?`<div class="moments"><h4>In the book</h4><ul>${p.book_moments.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></div>`:''}
       ${p.death?`<div class="dth"><h4>Departure</h4>${esc(p.death)}</div>`:''}
+      ${sallabiHTML(p)}
       <div><button class="btn" data-goto="${p.id}">Open the full entry →</button>
       <button class="btn" id="dailyKnown">${S.known[p.id]?'✓ Marked known':'Mark as known'}</button></div>
     </div>

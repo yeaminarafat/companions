@@ -62,6 +62,7 @@ function cardHTML(p){
     <div class="nrow"><span class="nm">${esc(p.name)} ${p.ra?`<span class="ra">${p.ra}</span>`:''}${p.dyr?`<span class="dyr">${esc(p.dyr)}</span>`:''}</span><span class="ar">${esc(p.arabic)}</span></div>
     ${p.kunya_titles?`<div class="kunya">${esc(p.kunya_titles)}</div>`:''}
     <div class="who">${esc(p.who)}</div>
+    ${p.who_ar?`<div class="whoar arabic">${esc(p.who_ar)}</div>`:''}
     ${badges?`<div class="badges">${badges}</div>`:''}
     <div class="detail">
       <div class="story">${esc(p.story)}</div>
@@ -176,6 +177,7 @@ function renderStudy(){
       ${p.kunya_titles?`<div class="kunya" style="margin-top:6px">${esc(p.kunya_titles)}</div>`:''}
       ${badges?`<div class="badges">${badges}</div>`:''}
       <div class="dwho">${esc(p.who)}</div>
+      ${p.who_ar?`<div class="whoar arabic">${esc(p.who_ar)}</div>`:''}
       <div class="dstory">${esc(p.story)}</div>
       ${p.book_moments&&p.book_moments.length?`<div class="moments"><h4>In the book</h4><ul>${p.book_moments.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></div>`:''}
       ${p.death?`<div class="dth"><h4>Departure</h4>${esc(p.death)}</div>`:''}

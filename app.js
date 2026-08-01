@@ -55,6 +55,50 @@ function sallabiHTML(p){
   </details>`;
 }
 
+/* ---------- family tree ---------- */
+const hasFam = id => !!(window.FAMILY && FAMILY.rel[id] &&
+  (FAMILY.rel[id].father||FAMILY.rel[id].mother||(FAMILY.rel[id].spouses||[]).length||(FAMILY.rel[id].children||[]).length||(FAMILY.rel[id].siblings||[]).length));
+
+function famChip(r){
+  if('r' in r){
+    const p = byId[r.r]; if(!p) return '';
+    const nav = hasFam(r.r) ? `data-famnav="${r.r}"` : `data-goto="${r.r}"`;
+    return `<button class="fchip in" ${nav}><span class="fen">${esc(p.name)}</span><span class="far arabic">${esc(p.arabic)}</span>${r.note?`<span class="fnote">${esc(r.note)}</span>`:''}</button>`;
+  }
+  const e = FAMILY.ext[r.x]||{};
+  const proph = /النبي ﷺ/.test(e.ar||'');
+  return `<span class="fchip ${proph?'proph':'out'}"><span class="fen">${esc(e.en)}</span><span class="far arabic">${esc(e.ar)}</span>${r.note?`<span class="fnote">${esc(r.note)}</span>`:''}</span>`;
+}
+function famSection(title, ar, rels){
+  if(!rels || !rels.length) return '';
+  return `<div class="fsec"><h4>${title} <span class="arabic">${ar}</span></h4><div class="frow">${rels.map(famChip).join('')}</div></div>`;
+}
+function openFam(id){
+  const p = byId[id], rec = (FAMILY.rel||{})[id]||{};
+  const ov = document.getElementById('famov');
+  ov.innerHTML = `<div class="fbox">
+    <button class="fclose" id="fclose">✕</button>
+    <div class="fhead">
+      <div class="fname">${esc(p.name)} ${p.ra?`<span class="ra">${p.ra}</span>`:''}</div>
+      <div class="fnamear arabic">${esc(p.arabic)}</div>
+      ${rec.clan?`<div class="fclan">${esc(rec.clan.en)} · <span class="arabic">${esc(rec.clan.ar)}</span></div>`:''}
+    </div>
+    ${famSection('Father','الأَبُ', rec.father?[rec.father]:[])}
+    ${famSection('Mother','الأُمُّ', rec.mother?[rec.mother]:[])}
+    ${famSection('Spouses','الأَزْوَاج', rec.spouses)}
+    ${famSection('Children','الأَوْلَاد', rec.children)}
+    ${famSection('Siblings','الإِخْوَة', rec.siblings)}
+    <div class="flegend">Tap a purple name to walk the family · greyed names are outside this directory</div>
+    <button class="btn" data-goto="${id}">Open ${esc(p.name)}'s entry →</button>
+  </div>`;
+  ov.style.display='flex';
+  document.getElementById('fclose').addEventListener('click', closeFam);
+  ov.addEventListener('click', e=>{ if(e.target===ov) closeFam(); }, {once:true});
+  ov.querySelectorAll('[data-famnav]').forEach(b=>b.addEventListener('click',()=>openFam(b.dataset.famnav)));
+  ov.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>{ closeFam(); gotoPerson(b.dataset.goto); }));
+}
+function closeFam(){ document.getElementById('famov').style.display='none'; }
+
 /* ---------- render directory ---------- */
 function cardHTML(p){
   const badges = p.badges.map(b=>`<span class="${bcls(b)}">${esc(b)}</span>`).join('');
@@ -76,6 +120,7 @@ function cardHTML(p){
       <button class="act" data-a="star" title="Star this companion">★ Star</button>
       <button class="act" data-a="known" title="Mark as known">✓ Known</button>
       <button class="act" data-a="review" title="Flag for review">↺ Review</button>
+      ${hasFam(p.id)?`<button class="act fam" data-fam="${p.id}">⚯ Family</button>`:''}
       <span class="expand-hint">tap to expand</span>
     </div>
   </div>`;
@@ -103,6 +148,7 @@ function renderDir(){
     });
     c.querySelectorAll('.act').forEach(b=>b.addEventListener('click', e=>{
       e.stopPropagation();
+      if(b.dataset.fam) return openFam(b.dataset.fam);
       toggleMark(c.dataset.id, b.dataset.a);
     }));
   });
@@ -127,7 +173,7 @@ function paintMarks(){
     const id = c.dataset.id;
     c.classList.toggle('is-known', !!S.known[id]);
     c.classList.toggle('is-star', !!S.star[id]);
-    c.querySelectorAll('.act').forEach(b=>b.classList.toggle('on', !!S[b.dataset.a][id]));
+    c.querySelectorAll('.act[data-a]').forEach(b=>b.classList.toggle('on', !!S[b.dataset.a][id]));
   });
   const known = COMPANIONS.filter(p=>S.known[p.id]).length;
   const pct = Math.round(known / COMPANIONS.length * 100);

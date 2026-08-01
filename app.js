@@ -59,39 +59,99 @@ function sallabiHTML(p){
 const hasFam = id => !!(window.FAMILY && FAMILY.rel[id] &&
   (FAMILY.rel[id].father||FAMILY.rel[id].mother||(FAMILY.rel[id].spouses||[]).length||(FAMILY.rel[id].children||[]).length||(FAMILY.rel[id].siblings||[]).length));
 
-function famChip(r){
+const BW=150, BH=58, GX=14, GY=44;
+
+function nodeInfo(r){
   if('r' in r){
-    const p = byId[r.r]; if(!p) return '';
-    const nav = hasFam(r.r) ? `data-famnav="${r.r}"` : `data-goto="${r.r}"`;
-    return `<button class="fchip in" ${nav}><span class="fen">${esc(p.name)}</span><span class="far arabic">${esc(p.arabic)}</span>${r.note?`<span class="fnote">${esc(r.note)}</span>`:''}</button>`;
+    const p=byId[r.r]; if(!p) return null;
+    return {en:p.name, ar:p.arabic, note:r.note, id:r.r, nav:hasFam(r.r)?'famnav':'goto', cls:'in'};
   }
-  const e = FAMILY.ext[r.x]||{};
-  const proph = /النبي ﷺ/.test(e.ar||'');
-  return `<span class="fchip ${proph?'proph':'out'}"><span class="fen">${esc(e.en)}</span><span class="far arabic">${esc(e.ar)}</span>${r.note?`<span class="fnote">${esc(r.note)}</span>`:''}</span>`;
+  const e=FAMILY.ext[r.x]||{};
+  return {en:e.en, ar:e.ar, note:r.note, cls:/النبي ﷺ/.test(e.ar||'')?'proph':'out'};
 }
-function famSection(title, ar, rels){
-  if(!rels || !rels.length) return '';
-  return `<div class="fsec"><h4>${title} <span class="arabic">${ar}</span></h4><div class="frow">${rels.map(famChip).join('')}</div></div>`;
+function nodeFO(n,x,y,me){
+  const attr = n.id ? (n.nav==='famnav'?`data-famnav="${n.id}"`:`data-goto="${n.id}"`) : '';
+  return `<foreignObject x="${x}" y="${y}" width="${BW}" height="${BH}">
+    <div xmlns="http://www.w3.org/1999/xhtml" class="fnode ${n.cls} ${me?'me':''}" ${attr}>
+      <span class="fen">${esc(n.en)}</span><span class="far arabic">${esc(n.ar)}</span>${n.note?`<span class="fnote">${esc(n.note)}</span>`:''}
+    </div></foreignObject>`;
 }
+const L=(x1,y1,x2,y2,cls='fl')=>`<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+const marr=(x1,x2,y)=>L(x1,y-2.5,x2,y-2.5,'fl fm')+L(x1,y+2.5,x2,y+2.5,'fl fm');
+
+function treeSVG(id){
+  const rec=(FAMILY.rel||{})[id]||{};
+  const me=byId[id];
+  const parents=[rec.father,rec.mother].filter(Boolean).map(nodeInfo).filter(Boolean);
+  const spouses=(rec.spouses||[]).map(nodeInfo).filter(Boolean);
+  const sibs=(rec.siblings||[]).map(nodeInfo).filter(Boolean);
+  const kids=(rec.children||[]).map(nodeInfo).filter(Boolean);
+  const capH=18;
+  const yP = parents.length? capH : 0;
+  const yC = yP + (parents.length? BH+GY : 0) + (spouses.length||sibs.length? capH:0);
+  const yK = yC + BH + (kids.length? GY : 0);
+  const H = yK + (kids.length? BH:0) + 8;
+
+  /* centre row: spouses | me | siblings */
+  const rowN = spouses.length+1+sibs.length;
+  const rowW = rowN*BW + (rowN-1)*GX;
+  const pW = parents.length*BW + (parents.length-1)*GX;
+  const kW = kids.length? kids.length*BW + (kids.length-1)*GX : 0;
+  const W = Math.max(rowW,pW,kW)+8;
+  const rowX = (W-rowW)/2;
+  const meX = rowX + spouses.length*(BW+GX);
+  const meCx = meX+BW/2;
+  let fo='', ln='', cap='';
+
+  /* parents, centred over me where room allows */
+  let pX = Math.min(Math.max(meCx-pW/2, 4), W-pW-4);
+  if(parents.length){
+    const jy = yP+BH+GY/2;
+    const drops=[];
+    parents.forEach((n,i)=>{ const x=pX+i*(BW+GX); fo+=nodeFO(n,x,yP); drops.push(x+BW/2); });
+    if(parents.length===2) ln+=marr(drops[0],drops[1],yP+BH/2+0.5)*0 || L(drops[0],yP+BH,drops[0],jy)+L(drops[1],yP+BH,drops[1],jy)+L(drops[0],jy,drops[1],jy);
+    else ln+=L(drops[0],yP+BH,drops[0],jy);
+    const mid=parents.length===2?(drops[0]+drops[1])/2:drops[0];
+    ln+=L(mid,jy,meCx,jy)+L(meCx,jy,meCx,yC);
+    /* siblings hang off the same junction */
+    sibs.forEach((n,i)=>{ const x=meX+(i+1)*(BW+GX); const cx=x+BW/2; ln+=L(cx,jy,cx,yC)+L(Math.min(meCx,cx),jy,Math.max(meCx,cx),jy); });
+  } else {
+    sibs.forEach((n,i)=>{ const x=meX+(i+1)*(BW+GX); ln+=L(meX+BW,yC+BH/2,x,yC+BH/2); });
+  }
+  /* centre row */
+  spouses.forEach((n,i)=>{ const x=rowX+i*(BW+GX); fo+=nodeFO(n,x,yC); ln+=marr(x+BW,x+BW+GX,yC+BH/2); });
+  fo+=nodeFO({en:me.name, ar:me.arabic, cls:'in'}, meX, yC, true);
+  sibs.forEach((n,i)=>{ fo+=nodeFO(n, meX+(i+1)*(BW+GX), yC); });
+  if(spouses.length) cap+=`<text class="fcap" x="${rowX}" y="${yC-5}">Spouses · الأزواج</text>`;
+  if(sibs.length) cap+=`<text class="fcap" x="${meX+BW+GX}" y="${yC-5}">Siblings · الإخوة</text>`;
+  /* children */
+  if(kids.length){
+    const ky=yC+BH+GY/2; const kX=(W-kW)/2;
+    ln+=L(meCx,yC+BH,meCx,ky);
+    const cxs=kids.map((n,i)=>kX+i*(BW+GX)+BW/2);
+    ln+=L(Math.min(meCx,cxs[0]),ky,Math.max(meCx,cxs[cxs.length-1]),ky);
+    kids.forEach((n,i)=>{ const x=kX+i*(BW+GX); fo+=nodeFO(n,x,yK); ln+=L(cxs[i],ky,cxs[i],yK); });
+  }
+  return `<div class="ftwrap"><svg class="ftree" data-mecx="${meCx}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${ln}${cap}${fo}</svg></div>`;
+}
+
 function openFam(id){
-  const p = byId[id], rec = (FAMILY.rel||{})[id]||{};
-  const ov = document.getElementById('famov');
-  ov.innerHTML = `<div class="fbox">
+  const p=byId[id], rec=(FAMILY.rel||{})[id]||{};
+  const ov=document.getElementById('famov');
+  ov.innerHTML=`<div class="fbox">
     <button class="fclose" id="fclose">✕</button>
     <div class="fhead">
       <div class="fname">${esc(p.name)} ${p.ra?`<span class="ra">${p.ra}</span>`:''}</div>
       <div class="fnamear arabic">${esc(p.arabic)}</div>
       ${rec.clan?`<div class="fclan">${esc(rec.clan.en)} · <span class="arabic">${esc(rec.clan.ar)}</span></div>`:''}
     </div>
-    ${famSection('Father','الأَبُ', rec.father?[rec.father]:[])}
-    ${famSection('Mother','الأُمُّ', rec.mother?[rec.mother]:[])}
-    ${famSection('Spouses','الأَزْوَاج', rec.spouses)}
-    ${famSection('Children','الأَوْلَاد', rec.children)}
-    ${famSection('Siblings','الإِخْوَة', rec.siblings)}
-    <div class="flegend">Tap a purple name to walk the family · greyed names are outside this directory</div>
+    ${treeSVG(id)}
+    <div class="flegend">Single line: blood · double line: marriage · tap a purple box to walk the family · grey boxes are outside this directory</div>
     <button class="btn" data-goto="${id}">Open ${esc(p.name)}'s entry →</button>
   </div>`;
   ov.style.display='flex';
+  const wrap=ov.querySelector('.ftwrap'), svg=ov.querySelector('.ftree');
+  if(wrap&&svg) wrap.scrollLeft = (+svg.dataset.mecx||0) - wrap.clientWidth/2;
   document.getElementById('fclose').addEventListener('click', closeFam);
   ov.addEventListener('click', e=>{ if(e.target===ov) closeFam(); }, {once:true});
   ov.querySelectorAll('[data-famnav]').forEach(b=>b.addEventListener('click',()=>openFam(b.dataset.famnav)));

@@ -69,7 +69,7 @@ section.group{margin-bottom:46px}
 .ghead .gsub{color:var(--ink-soft);font-style:italic;font-size:16px}
 .gcount{font-family:Inter,'Amiri',sans-serif;font-size:12px;color:var(--ink-soft);margin:8px 0 16px}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px 34px;cursor:pointer;transition:box-shadow .15s,border-color .15s;position:relative}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px 14px;cursor:pointer;transition:box-shadow .15s,border-color .15s;position:relative}
 .card:hover{border-color:var(--gold);box-shadow:0 3px 14px rgba(70,30,100,.10)}
 .card.major{border-left:4px solid var(--gold)}
 .card.ctx{border-left:4px solid #b6a6c2;background:#f6f1fa}
@@ -113,7 +113,7 @@ section.group{margin-bottom:46px}
 .minor-note{font-family:Inter,'Amiri',sans-serif;font-size:12px;font-weight:600;color:var(--ink-soft);margin:20px 0 10px;letter-spacing:.6px;text-transform:uppercase}
 .noresults{padding:40px;text-align:center;color:var(--ink-soft);font-style:italic;display:none}
 /* card action bar */
-.acts{position:absolute;left:18px;right:18px;bottom:8px;display:flex;gap:6px;align-items:center}
+.acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
 .act{font-family:Inter,'Amiri',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;line-height:1.5}
 .act:hover{border-color:var(--gold)}
 .act.on[data-a="star"]{background:#f4e8fb;color:#7c3f9e;border-color:#e0c6f0}
@@ -210,6 +210,22 @@ section.group{margin-bottom:46px}
 .fnote{font-family:Inter,'Amiri',sans-serif;font-size:9.5px;color:var(--ink-soft);font-style:italic}
 .flegend{font-family:Inter,'Amiri',sans-serif;font-size:10.5px;color:var(--ink-soft);margin:15px 0 8px}
 .act.fam{color:var(--green2);border-color:#d8c3ee}
+
+.ftwrap{overflow-x:auto;margin-top:14px;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.ftree{display:block;margin:0 auto}
+.fl{stroke:#b9a3d6;stroke-width:1.6}
+.fm{stroke:#c9a75a}
+.fcap{font-family:Inter,'Amiri',sans-serif;font-size:9.5px;fill:#8a7ba0;letter-spacing:.6px;text-transform:uppercase}
+.fnode{box-sizing:border-box;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:1.5px solid var(--line);border-radius:12px;background:#fff;text-align:center;padding:2px 6px;overflow:hidden}
+.fnode.in{border-color:#d8c3ee;background:#f7f1fc;cursor:pointer}
+.fnode.in .fen{color:var(--green2);font-weight:600}
+.fnode.me{border:2px solid var(--gold);background:#fdfaff;box-shadow:0 0 0 3px #efe3fa}
+.fnode.out{opacity:.72;background:#f3f1f5}
+.fnode.proph{border-color:var(--gold);background:#f9f3e9}
+.fnode .fen{font-family:'Crimson Pro','Amiri',serif;font-size:12.5px;line-height:1.15;color:var(--ink);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.fnode .far{font-family:'Amiri',serif;font-size:14px;line-height:1.3;direction:rtl;color:var(--ink-soft);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.fnode .fnote{font-family:Inter,'Amiri',sans-serif;font-size:8.5px;color:var(--ink-soft);font-style:italic;line-height:1.1}
+.fbox{max-width:900px}
 /* ---------- install banner ---------- */
 #install{display:none;position:fixed;left:12px;right:12px;bottom:calc(12px + var(--safe-bot));z-index:80;background:var(--green);color:#eadfbe;border:1px solid var(--gold);border-radius:14px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,.25);font-family:Inter,'Amiri',sans-serif;font-size:13.5px;line-height:1.5}
 #install b{color:var(--gold-soft)}
@@ -238,7 +254,7 @@ footer .arabic{font-size:19px;color:var(--gold-soft)}
   .ghead h2{font-size:23px}
   .ghead .gsub{font-size:14.5px}
   .cards{grid-template-columns:1fr;gap:11px}
-  .card{padding:15px 16px 32px}
+  .card{padding:15px 16px 12px}
   .nm{font-size:19px}
   footer{font-size:13px;padding:24px 16px calc(24px + var(--safe-bot))}
 }

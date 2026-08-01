@@ -486,7 +486,15 @@ if(!standalone && isIOS){
 /* ---------- service worker ---------- */
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{ /* file:// or unsupported — app still works online */ });
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => { reg.update(); setInterval(()=>reg.update(), 60*60*1000); })
+      .catch(()=>{ /* file:// or unsupported — app still works online */ });
+    /* when a new version takes over, reload once so it shows immediately */
+    let swapped = false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(swapped || !navigator.serviceWorker.controller) return;
+      swapped = true; location.reload();
+    });
   });
 }
 

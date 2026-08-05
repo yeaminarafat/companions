@@ -548,6 +548,7 @@ function applyFilter(){
     else if(filter==='women') ok = isFem(p);
     else if(filter==='__star') ok = !!S.star[p.id];
     else if(filter==='__review') ok = !!S.review[p.id];
+    else if(filter==='__known') ok = !!S.known[p.id];
     else if(filter==='__unknown') ok = p.group!=='context' && !S.known[p.id];
     else if(filter!=='all') ok = p.badges.includes(filter);
     if(ok && q){

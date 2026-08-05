@@ -130,6 +130,41 @@ function qBadge(){                                   /* T2 */
           because:`${p.name} — ${p.who}`};
 }
 
+
+function relName(r){ if(!r) return null; if('r' in r){const p=byId[r.r]; return p?p.name:null;} return (FAMILY.ext[r.x]||{}).en||null; }
+function tokOverlap(a,b){
+  const T=s=>new Set(String(s).split(/\s+/).map(strip).filter(w=>w.length>=4&&!/^(ibn|bint|abu|abi|umm|the)$/.test(w)));
+  const A=T(a),B=T(b); for(const w of A) if(B.has(w)) return true; return false;
+}
+function qFamily(){                                  /* T3 — from the family graph */
+  if(!window.FAMILY) return null;
+  const kinds=[['spouses','Who was married to'],['father','Who was the father of'],['mother','Who was the mother of']];
+  for(let k=0;k<25;k++){
+    const p=pick(COMPANIONS); const rec=FAMILY.rel[p.id]; if(!rec) continue;
+    const [kind,phr]=pick(kinds);
+    const rel = kind==='spouses' ? (rec.spouses&&rec.spouses.length?pick(rec.spouses):null) : rec[kind];
+    const right=relName(rel); if(!right) continue;
+    if(/النبي|Prophet/.test(right)) continue;      /* the ﷺ option would be a giveaway */
+    if(tokOverlap(right,p.name)) continue;           /* no patronymic giveaways */
+    /* distractors: same-kind relatives of other people */
+    const wrong=[]; const seen=new Set([strip(right)]);
+    for(const [oid,orec] of shuffle(Object.entries(FAMILY.rel))){
+      if(oid===p.id) continue;
+      const c = kind==='spouses' ? (orec.spouses&&orec.spouses[0]) : orec[kind];
+      const nm=relName(c);
+      if(!nm||seen.has(strip(nm))||tokOverlap(nm,p.name)||/النبي|Prophet/.test(nm)) continue;
+      wrong.push(nm); seen.add(strip(nm));
+      if(wrong.length>=3) break;
+    }
+    if(wrong.length<3) continue;
+    const roleAr = kind==='spouses'?'':''; 
+    return {subject:p.id, prompt:`${phr} ${p.name}?`, body:'',
+            options: shuffle([{label:right,right:true},...wrong.map(w=>({label:w,right:false}))]),
+            because:`${p.name} — ${p.who}`};
+  }
+  return null;
+}
+
 /* --- tier 3: the timeline --- */
 const EVENTS = DATA.timeline.eras.flatMap((e,i) => e.events.map(ev => ({...ev, era:e.title, eraIdx:i})));
 function evYear(ev){ const m=(ev.year||'').match(/(\d{3,4})/); return m?+m[1]:null; }
@@ -185,7 +220,7 @@ function qChapter(){                                 /* T3 */
 const GEN = {
   1: [qScene, qScene, qWho, qArabic],
   2: [qCircle, qTitle, qDeath, qBadge, qWho],
-  3: [qEventOrder, qEventWho, qEventWhen, qChapter],
+  3: [qEventOrder, qEventWho, qEventWhen, qChapter, qFamily, qFamily],
 };
 
 function makeQuestion(tier, preferId){

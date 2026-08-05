@@ -1,6 +1,6 @@
 /* Companions of the Prophet ﷺ — service worker
    Cache-first over a full precache: once installed the app never needs the network. */
-const VERSION = 'companions-54ac0e9146';
+const VERSION = 'companions-25fb02e5f6';
 const ASSETS = [
   "./",
   "index.html",

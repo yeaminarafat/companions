@@ -45,6 +45,20 @@ function findPerson(label){
   return hit ? hit.id : null;
 }
 
+/* ---------- cross-links inside descriptions ---------- */
+const NAME_RE = (()=>{
+  const names = DATA.people.map(p=>({n:p.name,id:p.id})).sort((a,b)=>b.n.length-a.n.length);
+  const escRe = t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return { re:new RegExp('('+names.map(x=>escRe(x.n)).join('|')+')','g'),
+           map:Object.fromEntries(names.map(x=>[x.n,x.id])) };
+})();
+function linkify(escapedText, selfId){
+  return escapedText.replace(NAME_RE.re, m=>{
+    const id=NAME_RE.map[m];
+    return (!id||id===selfId)?m:`<span class="plink" data-goto="${id}">${m}</span>`;
+  });
+}
+
 /* ---------- al-Ṣallābī passage ---------- */
 function sallabiHTML(p){
   if(!p.sallabi || !p.sallabi.text) return '';
@@ -59,80 +73,165 @@ function sallabiHTML(p){
 const hasFam = id => !!(window.FAMILY && FAMILY.rel[id] &&
   (FAMILY.rel[id].father||FAMILY.rel[id].mother||(FAMILY.rel[id].spouses||[]).length||(FAMILY.rel[id].children||[]).length||(FAMILY.rel[id].siblings||[]).length));
 
-const BW=150, BH=58, GX=14, GY=44;
+const BW=172, BH=88, GX=14, GY=52;
 
+function gender(n){
+  const t=(n.en||'')+' '+(n.ar||'');
+  if(/\bbint\b|بنت|umm |أم /i.test(t)) return 'f';
+  if(/\bibn\b|بن |\babu\b|أبو/i.test(t)) return 'm';
+  return '?';
+}
+const ROLE={
+  father:['Father','الأب'], mother:['Mother','الأم'],
+  gf:['Grandfather','الجد'], gm:['Grandmother','الجدة'],
+  spouse_m:['Husband','الزوج'], spouse_f:['Wife','الزوجة'], spouse:['Spouse','زوج'],
+  child_m:['Son','الابن'], child_f:['Daughter','البنت'], child:['Child','من الأولاد'],
+  sib_m:['Brother','الأخ'], sib_f:['Sister','الأخت'], sib:['Sibling','من الإخوة'],
+};
 function nodeInfo(r){
+  if(!r) return null;
   if('r' in r){
     const p=byId[r.r]; if(!p) return null;
-    return {en:p.name, ar:p.arabic, note:r.note, id:r.r, nav:hasFam(r.r)?'famnav':'goto', cls:'in'};
+    return {en:p.name, ar:p.arabic, note:r.note, id:r.r, nav:hasFam(r.r)?'famnav':'goto', cls:'in', k:'r:'+r.r};
   }
   const e=FAMILY.ext[r.x]||{};
-  return {en:e.en, ar:e.ar, note:r.note, cls:/النبي ﷺ/.test(e.ar||'')?'proph':'out'};
+  return {en:e.en, ar:e.ar, note:r.note, cls:/النبي ﷺ/.test(e.ar||'')?'proph':'out', k:'x:'+r.x};
 }
-function nodeFO(n,x,y,me){
+function roleFor(base,n){
+  if(base==='spouse'||base==='child'||base==='sib'){
+    const g=gender(n); return ROLE[base+(g==='?'?'':'_'+g)]||ROLE[base];
+  }
+  return ROLE[base];
+}
+function nodeFO(n,x,y,me,role){
   const attr = n.id ? (n.nav==='famnav'?`data-famnav="${n.id}"`:`data-goto="${n.id}"`) : '';
+  const r = me?null:role;
   return `<foreignObject x="${x}" y="${y}" width="${BW}" height="${BH}">
-    <div xmlns="http://www.w3.org/1999/xhtml" class="fnode ${n.cls} ${me?'me':''}" ${attr}>
+    <div xmlns="http://www.w3.org/1999/xhtml" class="fnode ${n.cls} ${me?'me':''}" ${attr} title="${esc(n.en)}${n.note?' — '+esc(n.note):''}">
+      ${r?`<span class="frole">${r[0]} · <span class="arabic">${r[1]}</span></span>`:''}
       <span class="fen">${esc(n.en)}</span><span class="far arabic">${esc(n.ar)}</span>${n.note?`<span class="fnote">${esc(n.note)}</span>`:''}
     </div></foreignObject>`;
 }
 const L=(x1,y1,x2,y2,cls='fl')=>`<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
-const marr=(x1,x2,y)=>L(x1,y-2.5,x2,y-2.5,'fl fm')+L(x1,y+2.5,x2,y+2.5,'fl fm');
+function dbl(pts){  /* gold double polyline for marriage */
+  let out='';
+  for(let i=0;i<pts.length-1;i++){
+    const [a,b]=pts[i],[c,d]=pts[i+1];
+    const off = a===c ? [2.2,0] : [0,2.2];
+    out+=L(a-off[0],b-off[1],c-off[0],d-off[1],'fl fm')+L(a+off[0],b+off[1],c+off[0],d+off[1],'fl fm');
+  }
+  return out;
+}
 
 function treeSVG(id){
   const rec=(FAMILY.rel||{})[id]||{};
   const me=byId[id];
-  const parents=[rec.father,rec.mother].filter(Boolean).map(nodeInfo).filter(Boolean);
-  const spouses=(rec.spouses||[]).map(nodeInfo).filter(Boolean);
+  const father=nodeInfo(rec.father), mother=nodeInfo(rec.mother);
   const sibs=(rec.siblings||[]).map(nodeInfo).filter(Boolean);
-  const kids=(rec.children||[]).map(nodeInfo).filter(Boolean);
-  const capH=18;
-  const yP = parents.length? capH : 0;
-  const yC = yP + (parents.length? BH+GY : 0) + (spouses.length||sibs.length? capH:0);
-  const yK = yC + BH + (kids.length? GY : 0);
-  const H = yK + (kids.length? BH:0) + 8;
+  const spouses=(rec.spouses||[]).map(nodeInfo).filter(Boolean);
+  const kids=(rec.children||[]).map(c=>{ const n=nodeInfo(c); if(n) n.via=c.via||null; return n; }).filter(Boolean);
+  /* grandparents from the graph, only via roster parents */
+  function gps(par){
+    if(!par || !par.id) return [];
+    const r=FAMILY.rel[par.id]||{};
+    return [ r.father?{...nodeInfo(r.father),gr:'gf'}:null, r.mother?{...nodeInfo(r.mother),gr:'gm'}:null ].filter(Boolean);
+  }
+  const gpF=gps(father), gpM=gps(mother);
+  const hasGp=gpF.length||gpM.length;
 
-  /* centre row: spouses | me | siblings */
-  const rowN = spouses.length+1+sibs.length;
-  const rowW = rowN*BW + (rowN-1)*GX;
-  const pW = parents.length*BW + (parents.length-1)*GX;
-  const kW = kids.length? kids.length*BW + (kids.length-1)*GX : 0;
-  const W = Math.max(rowW,pW,kW)+8;
-  const rowX = (W-rowW)/2;
-  const meX = rowX + spouses.length*(BW+GX);
-  const meCx = meX+BW/2;
-  let fo='', ln='', cap='';
+  /* rows y */
+  let y=4;
+  const yGp = hasGp? y : null; if(hasGp) y+=BH+GY;
+  const yPar = (father||mother)? y : null; if(father||mother) y+=BH+GY;
+  const ySelf = y; y+=BH+ (spouses.length?GY:0);
+  const ySp = spouses.length? y : null; if(spouses.length) y+=BH+ (kids.length?GY:0);
+  else if(kids.length) y+=GY;
+  const yKid = kids.length? y : null; if(kids.length) y+=BH;
+  const H=y+8;
 
-  /* parents, centred over me where room allows */
-  let pX = Math.min(Math.max(meCx-pW/2, 4), W-pW-4);
-  if(parents.length){
-    const jy = yP+BH+GY/2;
+  /* order children: grouped by spouse order, unknowns last */
+  const spKeys=spouses.map(s=>s.k);
+  kids.sort((a,b)=>{
+    const ia=a.via?spKeys.indexOf(a.via):99, ib=b.via?spKeys.indexOf(b.via):99;
+    return (ia<0?98:ia)-(ib<0?98:ib);
+  });
+
+  /* row widths & x origins */
+  const wRow=n=>n*BW+(n-1)*GX;
+  const selfN=1+sibs.length;
+  const W=Math.max(wRow(selfN), wRow(Math.max(1,(father?1:0)+(mother?1:0))), wRow(Math.max(1,spouses.length)), wRow(Math.max(1,kids.length)), wRow(Math.max(1,gpF.length+gpM.length)))+16;
+  const cxOf=(x)=>x+BW/2;
+
+  let fo='', ln='';
+  /* self + siblings (self leftmost, sibs to the right, row centred) */
+  const selfX=(W-wRow(selfN))/2;
+  const meCx=cxOf(selfX);
+  fo+=nodeFO({en:me.name,ar:me.arabic,cls:'in'},selfX,ySelf,true);
+  sibs.forEach((n,i)=>{ fo+=nodeFO(n,selfX+(i+1)*(BW+GX),ySelf,false,roleFor('sib',n)); });
+
+  /* parents */
+  let jx=meCx;
+  if(father||mother){
+    const pN=(father?1:0)+(mother?1:0);
+    let pX=Math.min(Math.max(meCx-wRow(pN)/2,4),W-wRow(pN)-4);
     const drops=[];
-    parents.forEach((n,i)=>{ const x=pX+i*(BW+GX); fo+=nodeFO(n,x,yP); drops.push(x+BW/2); });
-    if(parents.length===2) ln+=marr(drops[0],drops[1],yP+BH/2+0.5)*0 || L(drops[0],yP+BH,drops[0],jy)+L(drops[1],yP+BH,drops[1],jy)+L(drops[0],jy,drops[1],jy);
-    else ln+=L(drops[0],yP+BH,drops[0],jy);
-    const mid=parents.length===2?(drops[0]+drops[1])/2:drops[0];
-    ln+=L(mid,jy,meCx,jy)+L(meCx,jy,meCx,yC);
-    /* siblings hang off the same junction */
-    sibs.forEach((n,i)=>{ const x=meX+(i+1)*(BW+GX); const cx=x+BW/2; ln+=L(cx,jy,cx,yC)+L(Math.min(meCx,cx),jy,Math.max(meCx,cx),jy); });
-  } else {
-    sibs.forEach((n,i)=>{ const x=meX+(i+1)*(BW+GX); ln+=L(meX+BW,yC+BH/2,x,yC+BH/2); });
+    [father,mother].filter(Boolean).forEach((n,i)=>{
+      const x=pX+i*(BW+GX);
+      fo+=nodeFO(n,x,yPar,false,n===father?ROLE.father:ROLE.mother);
+      drops.push({cx:cxOf(x), n});
+    });
+    const jy=yPar+BH+GY/2;
+    drops.forEach(d=>ln+=L(d.cx,yPar+BH,d.cx,jy));
+    if(drops.length===2) ln+=L(drops[0].cx,jy,drops[1].cx,jy);
+    jx=drops.length===2?(drops[0].cx+drops[1].cx)/2:drops[0].cx;
+    ln+=L(jx,jy,meCx,jy)+L(meCx,jy,meCx,ySelf);
+    /* siblings share the junction */
+    sibs.forEach((n,i)=>{ const cx=cxOf(selfX+(i+1)*(BW+GX)); ln+=L(Math.min(jx,cx),jy,Math.max(jx,cx),jy)+L(cx,jy,cx,ySelf); });
+    /* grandparents above each parent */
+    function drawGp(list, par){
+      if(!list.length||!par) return;
+      const pcx=drops.find(d=>d.n===par).cx;
+      let gX=Math.min(Math.max(pcx-wRow(list.length)/2,4),W-wRow(list.length)-4);
+      const gjy=yGp+BH+GY/2, gcxs=[];
+      list.forEach((n,i)=>{ const x=gX+i*(BW+GX); fo+=nodeFO(n,x,yGp,false,ROLE[n.gr]); gcxs.push(cxOf(x)); });
+      gcxs.forEach(c=>ln+=L(c,yGp+BH,c,gjy));
+      if(gcxs.length===2) ln+=L(gcxs[0],gjy,gcxs[1],gjy);
+      const gmid=gcxs.length===2?(gcxs[0]+gcxs[1])/2:gcxs[0];
+      ln+=L(gmid,gjy,pcx,gjy)+L(pcx,gjy,pcx,yPar);
+    }
+    drawGp(gpF,father); drawGp(gpM,mother);
+  } else if(sibs.length){
+    sibs.forEach((n,i)=>{ const x=selfX+(i+1)*(BW+GX); ln+=L(selfX+BW,ySelf+BH/2,x,ySelf+BH/2); });
   }
-  /* centre row */
-  spouses.forEach((n,i)=>{ const x=rowX+i*(BW+GX); fo+=nodeFO(n,x,yC); ln+=marr(x+BW,x+BW+GX,yC+BH/2); });
-  fo+=nodeFO({en:me.name, ar:me.arabic, cls:'in'}, meX, yC, true);
-  sibs.forEach((n,i)=>{ fo+=nodeFO(n, meX+(i+1)*(BW+GX), yC); });
-  if(spouses.length) cap+=`<text class="fcap" x="${rowX}" y="${yC-5}">Spouses · الأزواج</text>`;
-  if(sibs.length) cap+=`<text class="fcap" x="${meX+BW+GX}" y="${yC-5}">Siblings · الإخوة</text>`;
-  /* children */
+
+  /* spouses row: marriage rail (double, gold) from person down, across, into each spouse */
+  const spCxs=[];
+  if(spouses.length){
+    const sX=(W-wRow(spouses.length))/2;
+    const ry=ySelf+BH+GY/2;
+    spouses.forEach((n,i)=>{
+      const x=sX+i*(BW+GX); const cx=cxOf(x); spCxs.push(cx);
+      fo+=nodeFO(n,x,ySp,false,roleFor('spouse',n));
+    });
+    ln+=dbl([[meCx,ySelf+BH],[meCx,ry]]);
+    ln+=dbl([[Math.min(meCx,...spCxs),ry],[Math.max(meCx,...spCxs),ry]]);
+    spCxs.forEach(cx=>ln+=dbl([[cx,ry],[cx,ySp]]));
+  }
+
+  /* children row, elbow up to co-parent spouse (or to person) */
   if(kids.length){
-    const ky=yC+BH+GY/2; const kX=(W-kW)/2;
-    ln+=L(meCx,yC+BH,meCx,ky);
-    const cxs=kids.map((n,i)=>kX+i*(BW+GX)+BW/2);
-    ln+=L(Math.min(meCx,cxs[0]),ky,Math.max(meCx,cxs[cxs.length-1]),ky);
-    kids.forEach((n,i)=>{ const x=kX+i*(BW+GX); fo+=nodeFO(n,x,yK); ln+=L(cxs[i],ky,cxs[i],yK); });
+    const kX=(W-wRow(kids.length))/2;
+    const ky=yKid-GY/2;
+    kids.forEach((n,i)=>{
+      const x=kX+i*(BW+GX); const cx=cxOf(x);
+      fo+=nodeFO(n,x,yKid,false,roleFor('child',n));
+      const vi=n.via?spKeys.indexOf(n.via):-1;
+      const tx=vi>=0?spCxs[vi]:meCx;
+      const ty=vi>=0?ySp+BH:(spouses.length?ySelf+BH+GY/2:ySelf+BH);
+      ln+=L(cx,yKid,cx,ky)+L(Math.min(cx,tx),ky,Math.max(cx,tx),ky)+L(tx,ky,tx,ty);
+    });
   }
-  return `<div class="ftwrap"><svg class="ftree" data-mecx="${meCx}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${ln}${cap}${fo}</svg></div>`;
+  return `<div class="ftwrap"><svg class="ftree" data-mecx="${meCx}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${ln}${fo}</svg></div>`;
 }
 
 function openFam(id){
@@ -146,7 +245,7 @@ function openFam(id){
       ${rec.clan?`<div class="fclan">${esc(rec.clan.en)} · <span class="arabic">${esc(rec.clan.ar)}</span></div>`:''}
     </div>
     ${treeSVG(id)}
-    <div class="flegend">Single line: blood · double line: marriage · tap a purple box to walk the family · grey boxes are outside this directory</div>
+    <div class="flegend">Single line: blood · double gold line: marriage · children sit beneath the parent they were born to · tap a purple box to walk the family · grey boxes are outside this directory</div>
     <button class="btn" data-goto="${id}">Open ${esc(p.name)}'s entry →</button>
   </div>`;
   ov.style.display='flex';
@@ -169,7 +268,7 @@ function cardHTML(p){
     ${p.who_ar?`<div class="whoar arabic">${esc(p.who_ar)}</div>`:''}
     ${badges?`<div class="badges">${badges}</div>`:''}
     <div class="detail">
-      <div class="story">${esc(p.story)}</div>
+      <div class="story">${linkify(esc(p.story), p.id)}</div>
       ${p.book_moments&&p.book_moments.length?`<div class="moments"><h4>In the book</h4><ul>${p.book_moments.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></div>`:''}
       ${p.after_sirah?`<div class="after"><h4>After the sirah — beyond this book</h4><p>${esc(p.after_sirah)}</p></div>`:''}
       ${p.death?`<div class="dth"><h4>Departure</h4>${esc(p.death)}</div>`:''}
@@ -203,6 +302,10 @@ function renderDir(){
   root.innerHTML = html;
   root.querySelectorAll('.card').forEach(c=>{
     c.addEventListener('click', e=>{
+      const pl=e.target.closest('.plink');
+      if(pl){ e.stopPropagation(); gotoPerson(pl.dataset.goto); return; }
+      const bd=e.target.closest('.bdg');
+      if(bd){ e.stopPropagation(); filterByBadge(bd.textContent.trim()); return; }
       if(e.target.closest('.act') || e.target.closest('.sal')) return;
       c.classList.toggle('open');
     });
@@ -418,6 +521,15 @@ function switchTab(t){
 }
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 
+function filterByBadge(b){
+  switchTab('dir');
+  document.getElementById('search').value='';
+  filter=b;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.f===b));
+  applyFilter();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
 /* ---------- search & filters ---------- */
 let filter='all';
 document.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click',()=>{
@@ -489,10 +601,11 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js')
       .then(reg => { reg.update(); setInterval(()=>reg.update(), 60*60*1000); })
       .catch(()=>{ /* file:// or unsupported — app still works online */ });
-    /* when a new version takes over, reload once so it shows immediately */
+    /* reload once when a NEW version replaces an old one — not on first install */
+    const hadController = !!navigator.serviceWorker.controller;
     let swapped = false;
     navigator.serviceWorker.addEventListener('controllerchange', ()=>{
-      if(swapped || !navigator.serviceWorker.controller) return;
+      if(!hadController || swapped || !navigator.serviceWorker.controller) return;
       swapped = true; location.reload();
     });
   });

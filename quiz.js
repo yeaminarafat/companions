@@ -15,7 +15,20 @@ function qs(){
   if(!S.quiz) S.quiz = {srs:{}, tier:{1:{a:0,c:0},2:{a:0,c:0},3:{a:0,c:0}}, best:0};
   for(const t of [1,2,3]) if(!S.quiz.tier[t]) S.quiz.tier[t]={a:0,c:0};
   if(!S.quiz.srs) S.quiz.srs={};
+  if(!S.quiz.scope) S.quiz.scope='all';
   return S.quiz;
+}
+/* subject pool honours the study scope; distractors always come from everyone */
+function subjPool(){
+  if(qs().scope==='known'){ const k=COMPANIONS.filter(p=>S.known[p.id]); if(k.length) return k; }
+  return COMPANIONS;
+}
+/* sentence-aware truncation — never cut mid-word */
+function trunc(t,max){
+  t=(t||'').trim(); if(t.length<=max) return t;
+  const cut=t.slice(0,max);
+  const m=[...cut.matchAll(/[.!?][”"']?\s/g)];
+  return m.length? cut.slice(0,m[m.length-1].index+1) : cut.slice(0,cut.lastIndexOf(' '))+'…';
 }
 const today = () => Math.floor(Date.now()/864e5);
 
@@ -42,7 +55,10 @@ function mask(text, p){
   const set = new Set(toks);
   /* compare word-by-word on a normalised basis, so ʿAlī / 'Ali / Alee all match */
   const out = text.replace(/[\p{L}\u02BF\u02BE'’‘-]+/gu, w => set.has(strip(w)) ? '———' : w);
-  return out.replace(/(———[\s'’-]*)+/g, '——— ');
+  return out.replace(/(———[\s'’-]*)+/g, '——— ')
+            .replace(/\s{2,}/g,' ')
+            .replace(/\s+([,.;:!?%)\]])/g,'$1')
+            .replace(/——— ?'s/g,'———’s').trim();
 }
 
 /* distractors: same circle first, then same tier, then anyone */
@@ -75,7 +91,7 @@ function scenePassage(p){
 
 /* ---------- question generators ---------- */
 function qScene(){                                   /* T1 */
-  const pool = COMPANIONS.filter(p => (p.story||'').length>200);
+  const pool = subjPool().filter(p => (p.story||'').length>200);
   for(let k=0;k<12;k++){
     const p = pick(pool); const passage = scenePassage(p);
     if(passage && passage.includes('———')){
@@ -87,33 +103,33 @@ function qScene(){                                   /* T1 */
   return null;
 }
 function qWho(){                                     /* T1 */
-  const p = pick(COMPANIONS.filter(x=>x.who));
+  const p = pick(subjPool().filter(x=>x.who)); if(!p) return null;
   return {subject:p.id, prompt:`Who was ${p.name}?`, body:'',
           options: shuffle([{label:p.who, right:true}, ...others(p,3).map(x=>({label:x.who, right:false}))]),
           because:p.who};
 }
 function qArabic(){                                  /* T1 */
-  const p = pick(COMPANIONS.filter(x=>x.arabic));
+  const p = pick(subjPool().filter(x=>x.arabic)); if(!p) return null;
   return {subject:p.id, prompt:'Whose name is this?', body:`<span class="qar">${esc(p.arabic)}</span>`,
           options: shuffle([p, ...others(p,3)]).map(x=>({label:x.name, right:x.id===p.id})),
           because:`${p.name} — ${p.who}`};
 }
 function qCircle(){                                  /* T2 */
-  const p = pick(COMPANIONS);
+  const p = pick(subjPool()); if(!p) return null;
   const wrong = shuffle(DATA.groups.filter(g=>g.id!==p.group && g.id!=='context')).slice(0,3);
   return {subject:p.id, prompt:`Which circle does ${p.name} belong to?`, body:'',
           options: shuffle([{label:groupTitle(p.group), right:true}, ...wrong.map(g=>({label:g.title, right:false}))]),
           because:`${p.name} — ${p.who}`};
 }
 function qTitle(){                                   /* T2 */
-  const pool = COMPANIONS.filter(x=>x.kunya_titles && x.kunya_titles.length>8);
+  const pool = subjPool().filter(x=>x.kunya_titles && x.kunya_titles.length>8); if(!pool.length) return null;
   const p = pick(pool);
   return {subject:p.id, prompt:'Who carried these titles?', body:`<span class="qtitle">${esc(p.kunya_titles)}</span>`,
           options: shuffle([p, ...others(p,3)]).map(x=>({label:x.name, right:x.id===p.id})),
           because:`${p.name} — ${p.who}`};
 }
 function qDeath(){                                   /* T2 */
-  const pool = COMPANIONS.filter(x=>x.dyr && x.death);
+  const pool = subjPool().filter(x=>x.dyr && x.death); if(!pool.length) return null;
   const p = pick(pool);
   const wrong = shuffle(pool.filter(x=>x.dyr!==p.dyr)).slice(0,3);
   return {subject:p.id, prompt:`When did ${p.name} die?`, body:'',
@@ -121,7 +137,7 @@ function qDeath(){                                   /* T2 */
           because:p.death};
 }
 function qBadge(){                                   /* T2 */
-  const pool = COMPANIONS.filter(x=>x.badges && x.badges.length);
+  const pool = subjPool().filter(x=>x.badges && x.badges.length); if(!pool.length) return null;
   const p = pick(pool);
   const b = pick(p.badges);
   const wrongPool = COMPANIONS.filter(x=>!(x.badges||[]).includes(b));
@@ -140,7 +156,7 @@ function qFamily(){                                  /* T3 — from the family g
   if(!window.FAMILY) return null;
   const kinds=[['spouses','Who was married to'],['father','Who was the father of'],['mother','Who was the mother of']];
   for(let k=0;k<25;k++){
-    const p=pick(COMPANIONS); const rec=FAMILY.rel[p.id]; if(!rec) continue;
+    const p=pick(subjPool()); if(!p) return null; const rec=FAMILY.rel[p.id]; if(!rec) continue;
     const [kind,phr]=pick(kinds);
     const rel = kind==='spouses' ? (rec.spouses&&rec.spouses.length?pick(rec.spouses):null) : rec[kind];
     const right=relName(rel); if(!right) continue;
@@ -179,7 +195,7 @@ function qEventOrder(){                              /* T3 */
     const first = ya<yb ? a : b;
     return {subject:null, prompt:'Which came first?', body:'',
             options: shuffle([{label:a.title, right:a===first},{label:b.title, right:b===first}]),
-            because:`${first.title} — ${first.year}${first.ah?` (${first.ah})`:''}. ${first.desc||''}`.slice(0,300)};
+            because:trunc(`${first.title} — ${first.year}${first.ah?` (${first.ah})`:''}. ${first.desc||''}`,300)};
   }
   return null;
 }
@@ -190,10 +206,11 @@ function qEventWho(){                                /* T3 */
     const nm = pick(ev.people);
     const id = findPerson(nm);
     if(!id) continue;
+    if(qs().scope==='known' && !S.known[id] && k<14) continue;
     const p = byId[id];
     const inEvent = new Set((ev.people||[]).map(findPerson).filter(Boolean));
     const wrong = shuffle(COMPANIONS.filter(x=>!inEvent.has(x.id))).slice(0,3);
-    return {subject:id, prompt:'Who was part of this?', body:`<b>${esc(ev.title)}</b><br>${esc((ev.desc||'').slice(0,260))}`,
+    return {subject:id, prompt:'Who was part of this?', body:`<b>${esc(ev.title)}</b><br>${esc(trunc(ev.desc||'',260))}`,
             options: shuffle([{label:p.name, right:true}, ...wrong.map(x=>({label:x.name, right:false}))]),
             because:`${ev.title} — ${ev.year||''} ${ev.ah||''}`};
   }
@@ -203,7 +220,7 @@ function qEventWhen(){                               /* T3 */
   const pool = EVENTS.filter(e=>e.year && e.desc);
   const ev = pick(pool);
   const wrong = shuffle(pool.filter(e=>e.year!==ev.year)).slice(0,3);
-  return {subject:null, prompt:'When did this happen?', body:`<b>${esc(ev.title)}</b><br>${esc(ev.desc.slice(0,240))}`,
+  return {subject:null, prompt:'When did this happen?', body:`<b>${esc(ev.title)}</b><br>${esc(trunc(ev.desc,240))}`,
           options: shuffle([{label:`${ev.year}${ev.ah?` · ${ev.ah}`:''}`, right:true},
                             ...wrong.map(e=>({label:`${e.year}${e.ah?` · ${e.ah}`:''}`, right:false}))]),
           because:`${ev.title} — ${ev.era}`};
@@ -212,7 +229,7 @@ function qChapter(){                                 /* T3 */
   const pool = COMPANIONS.filter(x=>(x.book_moments||[]).length);
   const p = pick(pool);
   const m = pick(p.book_moments).replace(/^Ch\.\s*\d+:\s*/,'');
-  return {subject:p.id, prompt:'Whose moment in the book is this?', body:esc(m).slice(0,300),
+  return {subject:p.id, prompt:'Whose moment in the book is this?', body:esc(trunc(m,300)),
           options: shuffle([p, ...others(p,3)]).map(x=>({label:x.name, right:x.id===p.id})),
           because:`${p.name} — ${p.who}`};
 }
@@ -251,14 +268,21 @@ let SESSION = null;
 
 function startQuiz(tier, mode){
   const queue = mode==='review' ? shuffle(dueIds()) : [];
-  SESSION = {tier, mode, n:0, correct:0, streak:0, missed:[], queue,
+  SESSION = {tier, mode, n:0, correct:0, streak:0, missed:[], queue, seen:new Set(),
              total: mode==='round' ? 10 : (mode==='review' ? Math.max(1,queue.length) : Infinity)};
   nextQuestion();
 }
 function nextQuestion(){
   if(SESSION.n >= SESSION.total) return endQuiz();
   const preferId = SESSION.mode==='review' ? SESSION.queue[SESSION.n % Math.max(1,SESSION.queue.length)] : null;
-  const q = makeQuestion(SESSION.tier, preferId);
+  let q=null;
+  for(let t=0;t<30;t++){
+    q = makeQuestion(SESSION.tier, preferId);
+    if(!q) break;
+    const sig = q.subject || strip(q.prompt+(q.body||'').slice(0,60));
+    if(!SESSION.seen.has(sig) || t>=24){ SESSION.seen.add(sig); break; }
+    q=null;
+  }
   if(!q) return endQuiz();
   SESSION.q = q;
   renderQuestion();
@@ -331,9 +355,17 @@ function renderQuestion(chosen){
 }
 
 /* ---------- quiz home ---------- */
+function setScope(sc){ qs().scope=sc; save(); renderQuizHome(); }
 function renderQuizHome(){
   const q = qs(); const due = dueIds().length;
+  const known = COMPANIONS.filter(p=>S.known[p.id]).length;
   document.getElementById('quiz').innerHTML = `
+    <div class="qscope">
+      <span class="qscopelbl">Ask me about:</span>
+      <button class="chip ${q.scope!=='known'?'active':''}" id="scAll">All companions</button>
+      <button class="chip ${q.scope==='known'?'active':''}" id="scKnown" ${known?'':'disabled'}>✓ Known only${known?` (${known})`:''}</button>
+    </div>
+    ${q.scope==='known'&&known<5?`<div class="mn" style="margin:-6px 0 12px">Only ${known} marked known — distractors still draw on everyone, so questions stay fair.</div>`:''}
     <div class="tiles">
       ${[1,2,3].map(t=>{
         const s=q.tier[t]; const acc = s.a?Math.round(s.c/s.a*100):0;
@@ -361,4 +393,6 @@ function renderQuizHome(){
       <div class="mn">Anything you get wrong is flagged into your “still shaky” list and comes back sooner. Review mode follows that schedule.</div>
     </div>`;
   document.querySelectorAll('#quiz [data-mode]').forEach(b=>b.addEventListener('click',()=>startQuiz(+b.dataset.tier, b.dataset.mode)));
+  document.getElementById('scAll').addEventListener('click',()=>setScope('all'));
+  const sk=document.getElementById('scKnown'); if(sk&&!sk.disabled) sk.addEventListener('click',()=>setScope('known'));
 }
